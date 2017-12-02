@@ -1,0 +1,38 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+../../commons/testing.h
+iostream
+-
+exception
+-
+vector
+-
+utility
+-
+set
+-
+map
+-
+cmath
+-
+cstdlib
+-
+
+/Users/vladimir/shad-algorithm/contest1/task4/task4.cpp
+iostream
+-
+stack
+-
+vector
+-
+testing.h
+-
+random
+-
+

@@ -1,0 +1,3 @@
+/Users/vladimir/shad-algorithm/contest2/FootbalPlayers/build/CMakeFiles/rebuild_cache.dir
+/Users/vladimir/shad-algorithm/contest2/FootbalPlayers/build/CMakeFiles/edit_cache.dir
+/Users/vladimir/shad-algorithm/contest2/FootbalPlayers/build/CMakeFiles/task.dir

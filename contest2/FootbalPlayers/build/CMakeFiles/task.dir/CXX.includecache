@@ -1,0 +1,20 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/Users/vladimir/shad-algorithm/contest2/FootbalPlayers/FootballPlayers.cpp
+iostream
+-
+fstream
+-
+vector
+-
+random
+-
+algorithm
+-
+

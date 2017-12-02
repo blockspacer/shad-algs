@@ -1,0 +1,5 @@
+FROM best-cpp-course-ever.ru:4567/prime/shad-cpp/build:latest
+
+COPY . /opt/shad
+
+RUN find /opt/shad/private -name '*.cpp' -or -name '*.h' | xargs chmod o-rwx
