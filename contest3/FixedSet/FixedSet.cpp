@@ -11,6 +11,28 @@
  1 2 3 4
  */
 
+const int64_t my_prime = (static_cast<int64_t>(1) << 31) - static_cast<int64_t>(1);
+
+const int64_t my_const = 1000000000;
+
+
+class Hash {
+public:
+    Hash(const int64_t& a, const int64_t& b, const int64_t& M)
+    : a_coef(a), b_coef(b), M_coef(M) {
+    }
+    int GetHash(int number) const {
+        return (M_coef + (((((a_coef % my_prime) *
+                             ((number + my_const) % my_prime)) %
+                            my_prime +
+                            (b_coef % my_prime) %
+                            my_prime) % M_coef))) % M_coef;
+    }
+private:
+    int64_t a_coef;
+    int64_t b_coef;
+    int64_t M_coef = 1;
+};
 
 class QuadraticHash {
 public:
@@ -22,20 +44,22 @@ public:
     
     void AddElement(int64_t element);
     
-    bool Contains(int64_t to_check);
+    bool Contains(const int64_t& to_check) const;
     
-    size_t GetBucketSize();
+    size_t GetBucketSize() const;
     
 private:
-    int GetHash(int64_t number);
+    int GetHash(const int64_t& number) const;
     
     std::vector<int64_t> elements;
     
     std::vector<int64_t> table;
     
-    int64_t a_coef;
-    int64_t b_coef;
-    int64_t M_coef = 1;
+    Hash hash_;
+    
+//    int64_t a_coef;
+//    int64_t b_coef;
+//    int64_t M_coef = 1;
 };
 
 class FixedSet {
@@ -44,16 +68,18 @@ public:
     
     void Initialize(const std::vector<int64_t>& numbers);
     
-    bool Contains(int64_t number);
+    bool Contains(int64_t number) const;
     
 private:
-    int Hash(int64_t number);
+    int GetHash(const int64_t& number) const;
     
     std::vector<QuadraticHash> first_level_buckets;
     
-    int64_t a_coef;
-    int64_t b_coef;
-    int64_t M_coef = 1;
+    Hash hash_;
+    
+//    int64_t a_coef;
+//    int64_t b_coef;
+//    int64_t M_coef = 1;
 };
 
 
@@ -93,15 +119,10 @@ int main() {
     return 0;
 }
 
-QuadraticHash::QuadraticHash() {}
+QuadraticHash::QuadraticHash() : hash_(0, 0, 0) {}
 
-int QuadraticHash::GetHash(int64_t number) {
-// std::cout << a << ' ' << b << ' ' << number << std::endl;
-    return (M_coef + (((((a_coef % (static_cast<int64_t>(1) << 31) - static_cast<int64_t>(1))
-                         * ((number + 1000000000) % (static_cast<int64_t>(1) << 31) -
-                            static_cast<int64_t>(1))) % ((static_cast<int64_t>(1) << 31) - 1) +
-                        (b_coef % (static_cast<int64_t>(1) << 31) - 1)) %
-                       (static_cast<int64_t>(1) << 31) - 1) % M_coef)) % M_coef;
+int QuadraticHash::GetHash(const int64_t& number) const {
+    return hash_.GetHash(number);
 }
 
 void QuadraticHash::AddElement(int64_t element) {
@@ -114,24 +135,25 @@ void QuadraticHash::Initialize() {
 
 void QuadraticHash::Initialize(const std::vector<int64_t>& numbers) {
     std::default_random_engine generator(time(0));
-    std::uniform_int_distribution<int64_t> distribution_one(1, (static_cast<int64_t>(1) << 31) - 1);
-    std::uniform_int_distribution<int64_t> distribution_two(0, (static_cast<int64_t>(1) << 31) - 1);
+    std::uniform_int_distribution<int64_t> distribution_one(1, my_prime);
+    std::uniform_int_distribution<int64_t> distribution_two(0, my_prime);
     bool flag = true;
     bool flaggy = true;
     int hash = 0;
     while (flag) {
-        a_coef = distribution_one(generator);
-        b_coef = distribution_two(generator);
-        M_coef = numbers.size() * numbers.size();
-        // std::cout << a << ' ' << b << ' ' << M << '\n';
-        // std::cout << "creating table\n";
-        table = std::vector<int64_t>(M_coef, -1000000000);
+        hash_ = Hash(distribution_one(generator),
+                     distribution_one(generator),
+                     numbers.size() * numbers.size());
+//        a_coef = distribution_one(generator);
+//        b_coef = distribution_two(generator);
+//        M_coef = numbers.size() * numbers.size();
+        table = std::vector<int64_t>(numbers.size() * numbers.size(), -my_const);
         // std::cout << "done\n";
         flaggy = true;
         // std::cout << "initializing\n";
         for (size_t i = 0; (i < numbers.size()) && (flaggy); ++i) {
             hash = GetHash(numbers[i]);
-            if (table[hash] > -1000000000) {
+            if (table[hash] > -my_const) {
                 flaggy = false;
                 table.clear();
             } else {
@@ -145,7 +167,7 @@ void QuadraticHash::Initialize(const std::vector<int64_t>& numbers) {
 }
 
 
-bool QuadraticHash::Contains(int64_t to_check) {
+bool QuadraticHash::Contains(const int64_t& to_check) const {
     
     // std::cout << to_check << ' ' << GetHash(to_check) << '\n';
     if (table.size() == 0) {
@@ -154,16 +176,16 @@ bool QuadraticHash::Contains(int64_t to_check) {
     return table[GetHash(to_check)] == to_check;
 }
 
-size_t QuadraticHash::GetBucketSize() {
+size_t QuadraticHash::GetBucketSize() const {
     return elements.size();
 }
 
-FixedSet::FixedSet() {}
+FixedSet::FixedSet() : hash_(0, 0, 0) {}
 
 void FixedSet::Initialize(const std::vector<int64_t>& numbers) {
     std::default_random_engine generator(time(0));
-    std::uniform_int_distribution<int64_t> distribution_one(1, (static_cast<int64_t>(1) << 31) - 1);
-    std::uniform_int_distribution<int64_t> distribution_two(0, (static_cast<int64_t>(1) << 31) - 1);
+    std::uniform_int_distribution<int64_t> distribution_one(1, my_prime);
+    std::uniform_int_distribution<int64_t> distribution_two(0, my_prime);
     bool flag = true;
     bool flaggy = true;
     int64_t hash = 0;
@@ -171,17 +193,13 @@ void FixedSet::Initialize(const std::vector<int64_t>& numbers) {
     while (flag) {
         sum = 0;
         flaggy = true;
-        a_coef = distribution_one(generator);
-        b_coef = distribution_two(generator);
-        M_coef = numbers.size();
+        hash_ = Hash(distribution_one(generator), distribution_two(generator), numbers.size());
         first_level_buckets.resize(numbers.size());
         for (size_t i = 0; (i < numbers.size()) && (flaggy); ++i) {
-            hash = Hash(numbers[i]);
-            // std::cout << numbers[i] << ' ' << hash << '\n';
+            hash = GetHash(numbers[i]);
             sum += 2 * first_level_buckets[hash].GetBucketSize() + 1;
             first_level_buckets[hash].AddElement(numbers[i]);
             if (sum > 4 * numbers.size()) {
-                // std::cout << "smth went wrong\n";
                 first_level_buckets.clear();
                 flaggy = false;
             }
@@ -205,19 +223,13 @@ void FixedSet::Initialize(const std::vector<int64_t>& numbers) {
     // std::cout << "leaving\n";
 }
 
-bool FixedSet::Contains(int64_t number) {
+bool FixedSet::Contains(int64_t number) const {
     // std::cout << number << ' ' << Hash(number) << '\n';
-    return first_level_buckets[Hash(number)].Contains(number);
+    return first_level_buckets[GetHash(number)].Contains(number);
 }
 
-int FixedSet::Hash(int64_t number) {
-    return (M_coef + (((((a_coef % (static_cast<int64_t>(1) << 31) -
-                          static_cast<int64_t>(1)) *
-                         ((number + 1000000000) % (static_cast<int64_t>(1) << 31) -
-                          static_cast<int64_t>(1))) %
-                        ((static_cast<int64_t>(1) << 31) - 1) +
-                        (b_coef % (static_cast<int64_t>(1) << 31) - 1)) %
-                       (static_cast<int64_t>(1) << 31) - 1) % M_coef)) % M_coef;
+int FixedSet::GetHash(const int64_t& number) const {
+    return hash_.GetHash(number);
 }
 
 

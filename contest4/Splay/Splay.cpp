@@ -2,7 +2,7 @@
 #include <memory>
 #include <utility>
 #include <vector>
-#include <time.h>
+#include <algorithm>
 
 
 /* INPUT
@@ -22,10 +22,12 @@ public:
         std::shared_ptr<Node> parent_;
         T key_;
         
-        Node(const T& key = T(), std::shared_ptr<Node> left = std::shared_ptr<Node>(), std::shared_ptr<Node> right = std::shared_ptr<Node>()) : left_child_(left), right_child_(right), parent_(nullptr), key_(key) {}
-        
-        
+        Node(const T& key = T(),
+             std::shared_ptr<Node> left = std::shared_ptr<Node>(),
+             std::shared_ptr<Node> right = std::shared_ptr<Node>())
+        : left_child_(left), right_child_(right), parent_(nullptr), key_(key) {}
     };
+    
     std::shared_ptr<Node> root_;
     
     void KeepParent_(std::shared_ptr<Node> vertex) {
@@ -104,9 +106,11 @@ public:
         return vertex;
     }
     
-    std::pair<std::shared_ptr<Node>, std::shared_ptr<Node>> Split_(std::shared_ptr<Node> root, const T& key) {
+    std::pair<std::shared_ptr<Node>,
+    std::shared_ptr<Node>> Split_(std::shared_ptr<Node> root, const T& key) {
         if (root.get() == nullptr) {
-            return std::pair<std::shared_ptr<Node>, std::shared_ptr<Node>>(std::shared_ptr<Node>(), std::shared_ptr<Node>());
+            return std::pair<std::shared_ptr<Node>,
+            std::shared_ptr<Node>>(std::shared_ptr<Node>(), std::shared_ptr<Node>());
         }
         root = Search_(root, key);
         if (root->key_ == key) {
@@ -116,40 +120,48 @@ public:
             if (root->right_child_.get() != nullptr) {
                 root->right_child_->parent_ = std::shared_ptr<Node>();
             }
-            return std::pair<std::shared_ptr<Node>, std::shared_ptr<Node>> (root->left_child_, root->right_child_);
+            return std::pair<std::shared_ptr<Node>,
+            std::shared_ptr<Node>> (root->left_child_, root->right_child_);
         }
         if (root->key_ < key) {
             if (root->right_child_.get() == nullptr) {
-                return std::pair<std::shared_ptr<Node>, std::shared_ptr<Node>> (root, std::shared_ptr<Node>());
+                return std::pair<std::shared_ptr<Node>,
+                std::shared_ptr<Node>> (root, std::shared_ptr<Node>());
             }
             std::shared_ptr<Node> right = root->right_child_;
             right->parent_ = std::shared_ptr<Node>();
             root->right_child_ = std::shared_ptr<Node>();
-            return std::pair<std::shared_ptr<Node>, std::shared_ptr<Node>> (root, right);
+            return std::pair<std::shared_ptr<Node>,
+            std::shared_ptr<Node>> (root, right);
         } else {
             if (root->left_child_.get() == nullptr) {
-                return std::pair<std::shared_ptr<Node>, std::shared_ptr<Node>> (std::shared_ptr<Node>(), root);
+                return std::pair<std::shared_ptr<Node>,
+                std::shared_ptr<Node>> (std::shared_ptr<Node>(), root);
             }
             std::shared_ptr<Node> left = root->left_child_;
             left->parent_ = std::shared_ptr<Node>();
             root->left_child_ = std::shared_ptr<Node>();
-            return std::pair<std::shared_ptr<Node>, std::shared_ptr<Node>> (left, root);
+            return std::pair<std::shared_ptr<Node>,
+            std::shared_ptr<Node>> (left, root);
         }
-
     }
     
     std::shared_ptr<Node> Insert_(std::shared_ptr<Node> root, const T& key) {
-        std::pair<std::shared_ptr<Node>, std::shared_ptr<Node>> left_and_right = Split_(root, key);
-        if ((left_and_right.second.get() != nullptr) && (left_and_right.second->key_ == key)) {
-            //throw std::runtime_error("inserting an element that is already inside a tree\n");
+        std::pair<std::shared_ptr<Node>,
+        std::shared_ptr<Node>> left_and_right = Split_(root, key);
+        if ((left_and_right.second.get() != nullptr) &&
+            (left_and_right.second->key_ == key)) {
             return Merge_(left_and_right.first, left_and_right.second);
         }
-        root = std::make_shared<Node>(key, left_and_right.first, left_and_right.second);
+        root = std::make_shared<Node>(key,
+                                      left_and_right.first,
+                                      left_and_right.second);
         KeepParent_(root);
         return root;
     }
     
-    std::shared_ptr<Node> Merge_(std::shared_ptr<Node> left, std::shared_ptr<Node> right) {
+    std::shared_ptr<Node> Merge_(std::shared_ptr<Node> left,
+                                 std::shared_ptr<Node> right) {
         if (left.get() == nullptr) {
             return right;
         }
@@ -186,6 +198,53 @@ public:
         return Splay_(root);
     }
     
+    std::shared_ptr<Node> Min_(std::shared_ptr<Node> root) {
+        if (root.get() == nullptr) {
+            return std::shared_ptr<Node>();
+        }
+        while (root->left_child_.get() != nullptr) {
+            root = root->left_child_;
+        }
+        return Splay_(root);
+    }
+    
+    T Prev(const T& key) {
+        if (root_.get() == nullptr) {
+            throw std::runtime_error("none\n");
+        }
+        root_ = Search_(root_, key);
+        if (root_->key_ == key) {
+            if (root_->left_child_.get() == nullptr) {
+                throw std::runtime_error("none\n");
+            }
+            root_ = Max_(root_->left_child_);
+            return root_->key_;
+        } else if (root_->key_ < key) {
+            if (root_->right_child_.get() == nullptr) {
+                return root_->key_;
+            }
+            T helper = root_->key_;
+            root_ = Min_(root_->right_child_);
+            if (root_->key_ < key) {
+                return root_->key_;
+            } else {
+                return helper;
+            }
+        } else if (root_->key_ > key) {
+            if (root_->left_child_.get() == nullptr) {
+                throw std::runtime_error("none\n");
+            }
+            root_ = Max_(root_->left_child_);
+            if (root_->key_ < key) {
+                return root_->key_;
+            } else {
+                throw std::runtime_error("none\n");
+            }
+        }
+        throw std::runtime_error("none");
+    }
+    
+    
     void Insert(const T& key) {
         root_ = Insert_(root_, key);
     }
@@ -206,6 +265,8 @@ public:
         return root_.get() == nullptr;
     }
     
+    
+    
     void print_(std::shared_ptr<Node> vertex) {
         if (vertex.get() != nullptr) {
             print_(vertex->left_child_);
@@ -222,7 +283,6 @@ public:
             "\n";
             print_(vertex->right_child_);
         }
-        
     }
     
     void Print() {
@@ -230,8 +290,6 @@ public:
         print_(root_);
         std::cout << "==========================================\nDone printing\n";
     }
-public:
-    
 };
 
 
@@ -267,7 +325,7 @@ class Comaparator {
 public:
     Comaparator() {}
     bool operator()(const segment& first, const segment& second) {
-        return first.x_axis < second.x_axis;
+        return (first.x_axis < second.x_axis);
     }
         };
 
@@ -292,46 +350,40 @@ void TaskFunc() {
         helper.is_left = false;
         segs.push_back(helper);
     }
-    clock_t time;
-    time = clock();
     std::sort(segs.begin(), segs.end(), Comaparator());
     size_t counter = 0;
-    for (size_t i = 0; i < segs.size(); ++i) {
-        //std::cout << segs[i]. << '\n';
-        if (segs[i].is_left) {
-            if (tree.Search(segs[i])) {
-                throw std::runtime_error("same segment twice\n");
-            } else if (tree.IsEmpty()) {
-                tree.Insert(segs[i]);
-                counter++;
-            } else if (is_inside(tree.root_->key_, segs[i])) {
-                //tree.Insert(segs[i]);
-            } else if (tree.root_->left_child_.get() != nullptr) {
-                if (is_inside(tree.root_->left_child_->key_, segs[i])) {
-                    
-                } else {
-                    tree.Insert(segs[i]);
+    for (size_t index = 0; index < segs.size(); ++index) {
+        if (segs[index].is_left) {
+            if (tree.Search(segs[index])) {
+                // throw std::runtime_error("same segment twice\n");
+            } else {
+                try {
+                    helper = tree.Prev(segs[index]);
+                    if (is_inside(helper, segs[index])) {
+                        
+                    } else {
+                        tree.Insert(segs[index]);
+                        counter++;
+                    }
+                } catch (std::runtime_error ex) {
+                    tree.Insert(segs[index]);
                     counter++;
                 }
-            } else {
-                tree.Insert(segs[i]);
-                counter++;
             }
         } else {
-            if (tree.Search(segs[i])) {
+            if (tree.Search(segs[index])) {
                 // std::cout << segs[i] << '\n';
                 tree.Remove(tree.root_->key_);
             }
         }
     }
-    std::cout << static_cast<float>(clock() - time) / CLOCKS_PER_SEC << '\n';
+    // std::cout << static_cast<float>(clock() - time) / CLOCKS_PER_SEC << '\n';
     std::cout << counter << '\n';
 }
 
 int main() {
     
     TaskFunc();
-    
     return 0;
 }
 
